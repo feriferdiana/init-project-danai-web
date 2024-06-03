@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+    <ui:insert name="metadata"/>
+
+    <h:head>
+        <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+        <title>Web</title>
+        <meta name="description" content="Tumbuh Berkembang, Maju Bersama DANAI"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta name="theme-color" content="#A2CD3A"/>
+        <meta name="author" content="Feri Ferdiana"/>
+        <meta name="apple-mobile-web-app-title" content="LOGIS"/>
+        <meta name="apple-mobile-web-app-capable" content="yes"/>
+        <meta name="apple-mobile-web-app-status-bar-style" content="#A2CD3A"/>
+        <meta name="msapplication-navbutton-color" content="#A2CD3A"/>
+        <!-- Favicon & Apple Touch Icon-->
+        <link rel="stylesheet" href="resources/css/login.css"/>
+    </h:head>
+
+    <h:body id="company">
+        <ui:insert name="header">
+
+        </ui:insert>
+
+        <p:ajaxStatus>
+            <f:facet name="start">
+                <div class="ajax-status">
+                </div>
+            </f:facet>
+            <f:facet name="complete"><h:outputText /></f:facet>
+        </p:ajaxStatus>
+
+        <p:ajaxExceptionHandler type="javax.faces.application.ViewExpiredException"
+                                onexception="document.location.href = document.location.href;" />
+
+        <ui:insert name="content"/>
+
+        <h:form>
+            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                <p:commandButton value="YA" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check" />
+                <p:commandButton value="TIDAK" type="button" styleClass="ui-confirmdialog-no alt" icon="ui-icon-close" />
+            </p:confirmDialog>
+        </h:form>
+    </h:body>
+</html>

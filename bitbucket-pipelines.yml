@@ -1,0 +1,42 @@
+image: openjdk:11-jdk-slim
+options:
+  docker: true
+pipelines:
+  default:
+    - step:
+        name: Build & Push Image
+        script:
+          - export APP_NAME=ini-project-danai-web
+          - export APP_PORT=8080
+          - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+          - export BITBUCKET_COMMIT_SHORT="${BITBUCKET_COMMIT::7}"
+          - if [[ $BITBUCKET_BRANCH == "master" ]]; then
+            export ENV_NAME=prod && export IMAGE_TAG=danaiid/inventory-web-prod:latest;
+            elif [[ $BITBUCKET_BRANCH == "devel" ]]; then
+            export ENV_NAME=devel && export IMAGE_TAG=danaiid/$APP_NAME:$APP_NAME.devel.$BITBUCKET_COMMIT_SHORT;
+            elif [[ $BITBUCKET_BRANCH == "uat" ]]; then
+            export ENV_NAME=uat && export IMAGE_TAG=danaiid/$APP_NAME:$APP_NAME.uat.$BITBUCKET_COMMIT_SHORT;
+            else echo "not build for target environtment" || exit 1; fi
+          - docker build -t $IMAGE_TAG -f cicd/docker/build.Dockerfile . --build-arg CONFIG_ENV=$ENV_NAME --build-arg APP_PORT=$APP_PORT
+          - docker push $IMAGE_TAG
+
+    - step:
+        name: Deploy Application
+        script:
+          - if [[ $BITBUCKET_BRANCH == "uat" ]]; then
+            export ENV_NAME=uat && export SSH_USER=adiwisista && export SSH_IP=uatdanai.hrus.online && export SSH_KEY=cicd/ssh/keyuat;
+            elif [[ $BITBUCKET_BRANCH == "devel" ]]; then
+            export ENV_NAME=devel && export SSH_USER=adiwisista && export SSH_IP=147.139.135.218 && export SSH_KEY=cicd/ssh/keydevel;
+            else echo "not build for target environtment" || exit 1; fi
+          - export APP_NAME=ini-project-danai-web
+          - export APP_PORT=8080
+          - apt-get update -y
+          - apt-get install -y openssh-client
+          - export BITBUCKET_COMMIT_SHORT="${BITBUCKET_COMMIT::7}"
+          - export PROJECT_DIR=/home/adiwisista/appsdocker/$BITBUCKET_REPO_SLUG
+          - export IMAGE_TAG=danaiid/$APP_NAME:$APP_NAME.$ENV_NAME.$BITBUCKET_COMMIT_SHORT
+          - chmod 600 $SSH_KEY
+          - sed -i -e "s~APPNAME~$APP_NAME~" -e "s~IMAGETAG~$IMAGE_TAG~" -e "s~PORTNUM~$APP_PORT~" -e "s~PORTNUM2~$APP_PORT~" docker-compose-server.yml
+          - ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@$SSH_IP "mkdir -p $PROJECT_DIR;"
+          - scp -i $SSH_KEY -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r docker-compose-server.yml $SSH_USER@$SSH_IP:$PROJECT_DIR/docker-compose.yml
+          - ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@$SSH_IP "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD ; /usr/bin/docker pull $IMAGE_TAG; cd $PROJECT_DIR; /usr/local/bin/docker-compose up -d; yes | /usr/bin/docker image prune --all"
